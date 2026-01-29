@@ -1,5 +1,10 @@
 # Smart Hospital Appointment & Queue Management System
 
+## Features
+- **Patient**: Register, Book Appointment, View Live Token Status.
+- **Doctor**: Login, View Queue, Call Next Patient.
+- **Admin**: Add Doctor, View Stats.
+
 ## Prerequisites
 - Node.js (v14+)
 - Supabase Account
@@ -39,12 +44,19 @@
    ```
    App starts on `http://localhost:5173`.
 
-## Features
-- **Patient**: Register, Book Appointment, View Live Token Status.
-- **Doctor**: Login, View Queue, Call Next Patient.
-- **Admin**: Add Doctor, View Stats.
 
 ## Usage
 1. Open Admin Dashboard (`/admin`) to add a doctor first.
 2. Open Patient Portal (`/patient`) to register and book that doctor.
 3. Open Doctor Portal (`/doctor`) to view the queue and manage patients.
+
+for reference:
+<img width="1920" height="884" alt="Screenshot 2026-01-29 214233" src="https://github.com/user-attachments/assets/f23ce274-af36-44c1-8a97-808524b47b87" />
+<img width="1920" height="922" alt="Screenshot 2026-01-29 214154" src="https://github.com/user-attachments/assets/0d9dd66f-d523-4f8c-8b4a-fe972101fab1" />
+<img width="1920" height="1020" alt="image" src="https://github.com/user-attachments/assets/0136b8ba-e254-4500-b1a4-b9ab3e202589" />
+<img width="1920" height="915" alt="Screenshot 2026-01-29 214247" src="https://github.com/user-attachments/assets/16afeea9-3771-4545-9b3d-08338e258543" />
+<img width="1920" height="902" alt="Screenshot 2026-01-29 214312" src="https://github.com/user-attachments/assets/282e9213-aeec-4107-b461-0ae8502ac721" />
+<img width="1920" height="919" alt="Screenshot 2026-01-29 214333" src="https://github.com/user-attachments/assets/a3f551cd-caf0-4cad-aba9-9bae492fa151" />
+
+
+
