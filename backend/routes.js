@@ -85,8 +85,13 @@ router.post('/login/admin', async (req, res) => {
             return res.status(401).json({ error: 'Admin not found' });
         }
 
-        // Simple password check
-        if (password === admin.password) {
+        // Simple password check. If no password is set, require setup/reset instead of allowing a default.
+        const adminDbPass = admin.password;
+        if (!adminDbPass) {
+            return res.status(401).json({ error: 'Admin account requires password setup (contact owner)' });
+        }
+
+        if (password === adminDbPass) {
             res.json({ success: true, role: 'admin', admin: { email: admin.email } });
         } else {
             res.status(401).json({ error: 'Invalid Password' });
@@ -109,8 +114,9 @@ router.post('/login/doctor', async (req, res) => {
         if (error || !doctor) return res.status(401).json({ error: 'Doctor not found' });
 
         // Simple password check (plaintext for demo, hash in prod)
-        // Check if password column exists, if not assume default '123456' or handle legacy
-        const dbPass = doctor.password || '123456';
+        // Do not assume a plaintext default password; require password setup/reset if missing.
+        const dbPass = doctor.password;
+        if (!dbPass) return res.status(401).json({ error: 'Doctor account requires password setup' });
 
         if (password === dbPass) {
             res.json({ success: true, role: 'doctor', doctor });
@@ -160,7 +166,8 @@ router.post('/addDoctor', async (req, res) => {
                 name,
                 department,
                 avg_consult_time,
-                password: password || '123456', // Default password
+                // Do not set a plaintext default password; require explicit password or password setup flow.
+                password: password || null,
                 email: email || null
             }])
             .select()

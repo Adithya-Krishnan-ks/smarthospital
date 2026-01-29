@@ -11,7 +11,7 @@ CREATE TABLE doctors (
     name TEXT NOT NULL,
     department TEXT NOT NULL,
     avg_consult_time INT NOT NULL DEFAULT 10, -- in minutes
-    password TEXT NOT NULL DEFAULT '123456',
+    password TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

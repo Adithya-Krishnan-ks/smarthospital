@@ -1,8 +1,9 @@
 -- Insert Doctors
-INSERT INTO doctors (name, department, avg_consult_time, password) VALUES 
-('Dr. Smith', 'General Medicine', 10, '123456'),
-('Dr. Jones', 'Cardiology', 20, '123456'),
-('Dr. Emily', 'Pediatrics', 15, '123456');
+-- Insert Doctors without plaintext passwords. Set passwords via secure flow.
+INSERT INTO doctors (name, department, avg_consult_time) VALUES 
+('Dr. Smith', 'General Medicine', 10),
+('Dr. Jones', 'Cardiology', 20),
+('Dr. Emily', 'Pediatrics', 15);
 
 -- Insert Patients (Optional, typically patients register themselves)
 INSERT INTO patients (name, age, phone, priority) VALUES

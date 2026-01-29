@@ -8,15 +8,16 @@ ADD COLUMN IF NOT EXISTS reset_expires_at TIMESTAMP WITH TIME ZONE;
 CREATE TABLE IF NOT EXISTS admins (
     admin_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL, -- Plaintext for demo, hash in real app
+    password TEXT, -- Store hashed passwords in production
     reset_token TEXT,
     reset_expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 3. Seed Default Admin (if not exists)
+-- Create a default admin account without a plaintext password.
 INSERT INTO admins (email, password)
-VALUES ('admin@hospital.com', 'admin123')
+VALUES ('admin@hospital.com', NULL)
 ON CONFLICT (email) DO NOTHING;
 
 -- Optional: Update existing doctors with dummy emails for testing

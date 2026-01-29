@@ -7,7 +7,9 @@ END $$;
 
 -- 2. Add 'password' to doctors (Safe Add)
 ALTER TABLE doctors 
-ADD COLUMN IF NOT EXISTS password TEXT DEFAULT '123456';
+ADD COLUMN IF NOT EXISTS password TEXT;
+
+-- Avoid setting plaintext defaults. Run user-facing password-reset flow instead.
 
 -- 3. Add 'patient_code' to patients (Safe Add + Sequence)
 ALTER TABLE patients ADD COLUMN IF NOT EXISTS patient_code SERIAL;
