@@ -51,12 +51,13 @@
 3. Open Doctor Portal (`/doctor`) to view the queue and manage patients.
 
 for reference:
-<img width="1920" height="884" alt="Screenshot 2026-01-29 214233" src="https://github.com/user-attachments/assets/f23ce274-af36-44c1-8a97-808524b47b87" />
-<img width="1920" height="922" alt="Screenshot 2026-01-29 214154" src="https://github.com/user-attachments/assets/0d9dd66f-d523-4f8c-8b4a-fe972101fab1" />
-<img width="1920" height="1020" alt="image" src="https://github.com/user-attachments/assets/0136b8ba-e254-4500-b1a4-b9ab3e202589" />
-<img width="1920" height="915" alt="Screenshot 2026-01-29 214247" src="https://github.com/user-attachments/assets/16afeea9-3771-4545-9b3d-08338e258543" />
-<img width="1920" height="902" alt="Screenshot 2026-01-29 214312" src="https://github.com/user-attachments/assets/282e9213-aeec-4107-b461-0ae8502ac721" />
-<img width="1920" height="919" alt="Screenshot 2026-01-29 214333" src="https://github.com/user-attachments/assets/a3f551cd-caf0-4cad-aba9-9bae492fa151" />
+
+<img width="1568" height="718" alt="Screenshot 2026-05-25 025443" src="https://github.com/user-attachments/assets/52673ab8-8b52-48f9-89ba-a20887c44405" />
+<img width="1549" height="876" alt="Screenshot 2026-05-25 025607" src="https://github.com/user-attachments/assets/137d44cd-9ea1-4117-9a4f-bf11c40dff31" />
+<img width="1770" height="1002" alt="Screenshot 2026-05-25 025714" src="https://github.com/user-attachments/assets/d88edf91-f443-43e1-b2eb-e599bf8e2377" />
+<img width="1249" height="972" alt="Screenshot 2026-05-25 025819" src="https://github.com/user-attachments/assets/7a846a6c-e244-4a31-8968-c4c4b3709faa" />
+<img width="1255" height="725" alt="Screenshot 2026-05-25 025900" src="https://github.com/user-attachments/assets/0a72f944-cf7e-4f2e-a378-cc115ebbe54b" />
+
 
 
 
