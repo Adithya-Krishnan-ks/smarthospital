@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { Stethoscope, Lock, User, ArrowRight } from 'lucide-react';
+import API_BASE_URL from '../config';
 
 export default function DoctorLogin() {
     const [doctors, setDoctors] = useState([]);
@@ -13,7 +14,7 @@ export default function DoctorLogin() {
 
     useEffect(() => {
         // Fetch doctors list for dropdown convenience
-        axios.get('http://localhost:5000/api/doctors')
+        axios.get(`${API_BASE_URL}/doctors`)
             .then(res => setDoctors(res.data))
             .catch(console.error);
     }, []);
@@ -22,7 +23,7 @@ export default function DoctorLogin() {
         e.preventDefault();
         setError('');
         try {
-            const res = await axios.post('http://localhost:5000/api/login/doctor', {
+            const res = await axios.post(`${API_BASE_URL}/login/doctor`, {
                 doctor_id: selectedDoc,
                 password
             });
@@ -30,6 +31,8 @@ export default function DoctorLogin() {
                 localStorage.setItem('role', 'doctor');
                 localStorage.setItem('doctorId', res.data.doctor.doctor_id);
                 localStorage.setItem('doctorName', res.data.doctor.name);
+                localStorage.setItem('doctorDept', res.data.doctor.department);
+                localStorage.setItem('doctorAvgTime', res.data.doctor.avg_consult_time);
                 navigate('/doctor-dashboard');
             }
         } catch (err) {

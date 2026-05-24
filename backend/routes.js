@@ -471,24 +471,161 @@ router.post('/completeAppointment', async (req, res) => {
 // GET /admin/stats
 router.get('/admin/stats', async (req, res) => {
     try {
-        // Active Doctors: Count unique doctor_ids in the queue
-        const { data: activeDocs, error: doctorError } = await supabase(req)
-            .from('queue')
-            .select('doctor_id');
+        // Active Doctors: Count total doctors in system
+        const { count: doctorCount, error: doctorError } = await supabase(req)
+            .from('doctors')
+            .select('*', { count: 'exact', head: true });
 
         if (doctorError) throw doctorError;
 
-        // distinct count
-        const uniqueDoctors = new Set(activeDocs.map(d => d.doctor_id)).size;
-
-        // Active Patients: Total rows in queue
+        // Total Patients: Count total registered patients
         const { count: patientCount, error: patientError } = await supabase(req)
-            .from('queue')
+            .from('patients')
             .select('*', { count: 'exact', head: true });
 
         if (patientError) throw patientError;
 
-        res.json({ doctors: uniqueDoctors, patients: patientCount });
+        res.json({ doctors: doctorCount || 0, patients: patientCount || 0 });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// GET /admin/live-queues
+router.get('/admin/live-queues', async (req, res) => {
+    try {
+        const { data, error } = await supabase(req)
+            .from('queue')
+            .select(`
+                queue_id,
+                priority_level,
+                estimated_time,
+                doctor_id,
+                doctors (name, department),
+                appointments (
+                    token_number,
+                    status,
+                    patients (patient_id, name, patient_code, priority)
+                )
+            `)
+            .order('priority_level', { ascending: true }) // Emergency first
+            .order('created_at', { ascending: true }); // FIFO
+
+        if (error) throw error;
+
+        // Group by doctor
+        const groups = {};
+        data.forEach(q => {
+            const doctor = q.doctors;
+            const appointment = q.appointments;
+            if (!doctor || !appointment) return;
+
+            const docId = q.doctor_id;
+            if (!groups[docId]) {
+                groups[docId] = {
+                    doctor_id: docId,
+                    name: doctor.name,
+                    department: doctor.department,
+                    patients: []
+                };
+            }
+
+            groups[docId].patients.push({
+                queue_id: q.queue_id,
+                token_number: appointment.token_number,
+                status: appointment.status,
+                patient_id: appointment.patients.patient_id,
+                name: appointment.patients.name,
+                patient_code: appointment.patients.patient_code,
+                priority: appointment.patients.priority,
+                estimated_time: q.estimated_time
+            });
+        });
+
+        const result = Object.values(groups);
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// GET /patient/:patientId/appointments
+router.get('/patient/:patientId/appointments', async (req, res) => {
+    const { patientId } = req.params;
+    try {
+        const { data, error } = await supabase(req)
+            .from('appointments')
+            .select(`
+                appointment_id,
+                token_number,
+                status,
+                created_at,
+                doctors (name),
+                queue (estimated_time)
+            `)
+            .eq('patient_id', patientId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = data.map(apt => {
+            const queueItem = apt.queue && apt.queue.length > 0 ? apt.queue[0] : null;
+            let estTime = queueItem?.estimated_time;
+            if (!estTime) {
+                const fallbackDate = new Date(apt.created_at);
+                fallbackDate.setMinutes(fallbackDate.getMinutes() + 15);
+                estTime = fallbackDate.toISOString();
+            }
+
+            return {
+                appointment_id: apt.appointment_id,
+                token_number: apt.token_number,
+                status: apt.status,
+                doctor_name: apt.doctors?.name || 'Doctor',
+                estimated_time: estTime
+            };
+        });
+
+        res.json(formatted);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// GET /doctor/:doctorId/active
+router.get('/doctor/:doctorId/active', async (req, res) => {
+    const { doctorId } = req.params;
+    try {
+        const { data, error } = await supabase(req)
+            .from('appointments')
+            .select(`
+                appointment_id,
+                token_number,
+                status,
+                created_at,
+                patients (name, priority, age, patient_id)
+            `)
+            .eq('doctor_id', doctorId)
+            .eq('status', 'In Progress')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            const apt = data[0];
+            res.json({
+                appointment_id: apt.appointment_id,
+                token_number: apt.token_number,
+                status: apt.status,
+                patient_name: apt.patients?.name || 'Patient',
+                patient_id: apt.patients?.patient_id,
+                priority: apt.patients?.priority,
+                age: apt.patients?.age
+            });
+        } else {
+            res.json(null);
+        }
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

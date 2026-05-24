@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { KeyRound, Mail, Lock, ArrowRight, CheckCircle } from 'lucide-react';
+import API_BASE_URL from '../config';
+import Toast from '../components/Toast';
 
 export default function ForgotPassword() {
     const [step, setStep] = useState(1); // 1: Email, 2: OTP & New Password
@@ -13,6 +15,7 @@ export default function ForgotPassword() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [debugOtp, setDebugOtp] = useState(null); // For demo convenience
+    const [toast, setToast] = useState(null);
 
     const navigate = useNavigate();
 
@@ -21,7 +24,7 @@ export default function ForgotPassword() {
         setError('');
         setMessage('');
         try {
-            const res = await axios.post('http://localhost:5000/api/forgot-password', { email, role });
+            const res = await axios.post(`${API_BASE_URL}/forgot-password`, { email, role });
             if (res.data.success) {
                 setMessage(res.data.message);
                 if (res.data.debug_otp) setDebugOtp(res.data.debug_otp);
@@ -37,15 +40,17 @@ export default function ForgotPassword() {
         setError('');
         setMessage('');
         try {
-            const res = await axios.post('http://localhost:5000/api/reset-password', {
+            const res = await axios.post(`${API_BASE_URL}/reset-password`, {
                 email,
                 otp,
                 newPassword,
                 role
             });
             if (res.data.success) {
-                alert('Password Reset Successful! Please Login.');
-                navigate(role === 'admin' ? '/login/admin' : '/login/doctor');
+                setToast({ type: 'success', message: 'Password Reset Successful! Redirecting...' });
+                setTimeout(() => {
+                    navigate(role === 'admin' ? '/login/admin' : '/login/doctor');
+                }, 2000);
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Reset Failed');
@@ -183,6 +188,7 @@ export default function ForgotPassword() {
                     )}
                 </div>
             </div>
+            {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
         </Layout>
     );
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { Shield, Lock, ArrowRight } from 'lucide-react';
+import API_BASE_URL from '../config';
 
 export default function AdminLogin() {
     const [password, setPassword] = useState('');
@@ -13,7 +14,7 @@ export default function AdminLogin() {
         e.preventDefault();
         setError('');
         try {
-            const res = await axios.post('http://localhost:5000/api/login/admin', { password });
+            const res = await axios.post(`${API_BASE_URL}/login/admin`, { password });
             if (res.data.success) {
                 // In a real app, use Context or Redux. For simplicity:
                 localStorage.setItem('role', 'admin');

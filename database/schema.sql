@@ -1,32 +1,56 @@
--- Enable UUID extension
+-- ==========================================
+-- SMART HOSPITAL COMPLETE DATABASE SETUP
+-- Copy and run this script in your Supabase SQL Editor
+-- ==========================================
+
+-- 1. Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Enum Types
-CREATE TYPE priority_level AS ENUM ('Normal', 'Senior', 'Emergency');
-CREATE TYPE appointment_status AS ENUM ('Waiting', 'In Progress', 'Completed', 'Cancelled');
+-- 2. Create Enum Types
+DO $$ BEGIN
+    CREATE TYPE priority_level AS ENUM ('Normal', 'Senior', 'Emergency');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- Doctors Table
-CREATE TABLE doctors (
+DO $$ BEGIN
+    CREATE TYPE appointment_status AS ENUM ('Waiting', 'In Progress', 'Completed', 'Cancelled');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- 3. Create Doctors Table
+CREATE TABLE IF NOT EXISTS doctors (
     doctor_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     department TEXT NOT NULL,
     avg_consult_time INT NOT NULL DEFAULT 10, -- in minutes
-    password TEXT,
+    password TEXT, -- Plaintext for demo/hashed in production
+    email TEXT UNIQUE,
+    reset_token TEXT,
+    reset_expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Patients Table
-CREATE TABLE patients (
+-- 4. Create Patients Table
+CREATE TABLE IF NOT EXISTS patients (
     patient_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     age INT NOT NULL,
     phone TEXT NOT NULL,
     priority priority_level NOT NULL DEFAULT 'Normal',
+    patient_code SERIAL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Appointments Table
-CREATE TABLE appointments (
+-- Reset sequence to start from 1000 (gives patient IDs starting at 1000)
+ALTER SEQUENCE IF EXISTS patients_patient_code_seq RESTART WITH 1000;
+
+-- Index for fast patient code lookup
+CREATE INDEX IF NOT EXISTS idx_patients_code ON patients(patient_code);
+
+-- 5. Create Appointments Table
+CREATE TABLE IF NOT EXISTS appointments (
     appointment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     patient_id UUID REFERENCES patients(patient_id) ON DELETE CASCADE,
     doctor_id UUID REFERENCES doctors(doctor_id) ON DELETE SET NULL,
@@ -36,11 +60,8 @@ CREATE TABLE appointments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Queue Table (Live tracking)
--- Note: In a simple design, we can query appointments, but a separate table helps for optimizing 'next patient' logic if we want to retain history in appointments but mutate queue. 
--- However, for this requirement, we can model the Queue as a view or query on Appointments.
--- But the requirement asks for a Queue table: "Queue(queue_id, doctor_id, appointment_id, priority, estimated_time)"
-CREATE TABLE queue (
+-- 6. Create Queue Table (Live tracking)
+CREATE TABLE IF NOT EXISTS queue (
     queue_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     doctor_id UUID REFERENCES doctors(doctor_id) ON DELETE CASCADE,
     appointment_id UUID REFERENCES appointments(appointment_id) ON DELETE CASCADE,
@@ -49,5 +70,27 @@ CREATE TABLE queue (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Index for faster queue lookups
-CREATE INDEX idx_queue_doctor_priority ON queue(doctor_id, priority_level ASC, created_at ASC);
+-- Index for faster queue sorting/lookups
+CREATE INDEX IF NOT EXISTS idx_queue_doctor_priority ON queue(doctor_id, priority_level ASC, created_at ASC);
+
+-- 7. Create Admins Table
+CREATE TABLE IF NOT EXISTS admins (
+    admin_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT UNIQUE NOT NULL,
+    password TEXT, -- Store hashed passwords in production
+    reset_token TEXT,
+    reset_expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 8. Seed Default Admin (Requires password setup / change in production)
+INSERT INTO admins (email, password)
+VALUES ('admin@hospital.com', 'admin123')
+ON CONFLICT (email) DO NOTHING;
+
+-- 9. Seed Default Doctors
+INSERT INTO doctors (name, department, avg_consult_time, password, email) VALUES 
+('Dr. Smith', 'General Medicine', 10, '123456', 'smith@hospital.com'),
+('Dr. Jones', 'Cardiology', 20, '123456', 'jones@hospital.com'),
+('Dr. Emily', 'Pediatrics', 15, '123456', 'emily@hospital.com')
+ON CONFLICT DO NOTHING;

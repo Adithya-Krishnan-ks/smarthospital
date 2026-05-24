@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { User, Key, ArrowRight } from 'lucide-react';
+import API_BASE_URL from '../config';
 
 export default function PatientLogin() {
     const [patientId, setPatientId] = useState('');
@@ -14,7 +15,7 @@ export default function PatientLogin() {
         e.preventDefault();
         setError('');
         try {
-            const res = await axios.post('http://localhost:5000/api/login/patient', {
+            const res = await axios.post(`${API_BASE_URL}/login/patient`, {
                 patient_id: patientId,
                 name
             });
@@ -50,7 +51,7 @@ export default function PatientLogin() {
                                     value={patientId}
                                     onChange={(e) => setPatientId(e.target.value)}
                                     className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-                                    placeholder="e.g. 1001"
+                                    placeholder="e.g. xxxx"
                                     type="number"
                                     required
                                 />
@@ -65,7 +66,7 @@ export default function PatientLogin() {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-                                    placeholder="John Doe"
+                                    placeholder="Patient Name"
                                     required
                                 />
                             </div>

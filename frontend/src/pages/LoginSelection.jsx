@@ -8,8 +8,8 @@ export default function LoginSelection() {
         <Layout>
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-12">
                 <div className="space-y-4 animate-fade-in-up">
-                    <h1 className="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-                        Welcome to Smart Hospital
+                    <h1 className="text-5xl font-extrabold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700 dark:from-blue-400 dark:via-blue-300 dark:to-blue-500 bg-clip-text text-transparent">
+                         Welcome to Smart Hospital
                     </h1>
                     <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
                         Please select your role to access the dashboard.
@@ -36,7 +36,7 @@ export default function LoginSelection() {
                             <Stethoscope size={40} className="text-green-600 dark:text-green-400" />
                         </div>
                         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Doctor</h2>
-                        <p className="text-gray-500 dark:text-gray-400 mb-6">Manage patients, consultations, and your schedule.</p>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6">Manage patients, consultations, and schedule.</p>
                         <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 font-semibold group-hover:gap-3 transition-all">
                             Login <ArrowRight size={18} />
                         </div>

@@ -2,26 +2,24 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
-import { UserPlus, User, Phone, Activity, ArrowRight } from 'lucide-react';
+import { UserPlus, User, Phone, Activity, ArrowRight, CheckCircle } from 'lucide-react';
+import API_BASE_URL from '../config';
+import Modal from '../components/Modal';
 
 export default function RegisterPatient() {
     const [form, setForm] = useState({ name: '', age: '', phone: '', priority: 'Normal' });
     const [error, setError] = useState('');
+    const [registeredId, setRegisteredId] = useState(null);
     const navigate = useNavigate();
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
         try {
-            const res = await axios.post('http://localhost:5000/api/registerPatient', form);
+            const res = await axios.post(`${API_BASE_URL}/registerPatient`, form);
             if (res.status === 201) {
-                // Return 4-digit ID
                 const { patient_code } = res.data;
-                const displayId = patient_code || 'Error: Run Schema Update';
-                alert(`Registration Successful!\nYour Patient ID is: ${displayId}\nPlease save this 4-digit ID to login.`);
-
-                // Optional: Pre-fill login or just go to login
-                navigate('/login/patient');
+                setRegisteredId(patient_code || 'Error: Run Schema Update');
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Registration Failed');
@@ -50,7 +48,7 @@ export default function RegisterPatient() {
                                         value={form.name}
                                         onChange={e => setForm({ ...form, name: e.target.value })}
                                         className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-                                        placeholder="Jane Doe"
+                                        placeholder="Full name"
                                         required
                                     />
                                 </div>
@@ -79,7 +77,7 @@ export default function RegisterPatient() {
                                     value={form.phone}
                                     onChange={e => setForm({ ...form, phone: e.target.value })}
                                     className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-                                    placeholder="(555) 123-4567"
+                                    placeholder="+91 98765 43210"
                                     required
                                 />
                             </div>
@@ -117,6 +115,40 @@ export default function RegisterPatient() {
                     </p>
                 </div>
             </div>
+            <Modal 
+                isOpen={!!registeredId} 
+                title="Registration Successful!" 
+                onClose={() => {
+                    setRegisteredId(null);
+                    navigate('/login/patient');
+                }}
+            >
+                <div className="text-center space-y-5">
+                    <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/30 rounded-full flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle size={32} />
+                    </div>
+                    <div className="space-y-2">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Your account is ready! Please save this 4-digit code to log in to your patient portal:
+                        </p>
+                        <div className="text-4xl font-extrabold tracking-widest text-indigo-600 dark:text-indigo-400 bg-gray-50 dark:bg-slate-900 py-4 px-6 rounded-2xl border border-gray-100 dark:border-slate-700 mt-2 select-all font-mono">
+                            {registeredId}
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            if (registeredId) {
+                                navigator.clipboard.writeText(registeredId.toString());
+                            }
+                            setRegisteredId(null);
+                            navigate('/login/patient');
+                        }}
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-indigo-500/30 transition transform hover:-translate-y-0.5 cursor-pointer"
+                    >
+                        Copy Code & Login
+                    </button>
+                </div>
+            </Modal>
         </Layout>
     );
 }

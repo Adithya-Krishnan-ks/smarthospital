@@ -1,15 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Calendar, User, Clock, Activity, AlertCircle, Phone, Hash } from 'lucide-react';
+import { Calendar, User, Clock, Activity, AlertCircle, Phone, Hash, LogOut } from 'lucide-react';
 import Layout from '../components/Layout';
+import API_BASE_URL from '../config';
+import Toast from '../components/Toast';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = API_BASE_URL;
 
 function PatientDashboard() {
+    const navigate = useNavigate();
     const [patient, setPatient] = useState(null);
     const [doctors, setDoctors] = useState([]);
     const [appointments, setAppointments] = useState([]);
+    const [selectedOldApptId, setSelectedOldApptId] = useState('');
+    const [activeTab, setActiveTab] = useState('active');
+    const [toast, setToast] = useState(null);
 
     // Registration Form
     const [regForm, setRegForm] = useState({ name: '', age: '', phone: '', priority: 'Normal' });
@@ -17,14 +23,45 @@ function PatientDashboard() {
     // Booking Form
     const [selectedDoctor, setSelectedDoctor] = useState('');
 
+    const activeAppointments = appointments.filter(apt => apt.status === 'Waiting' || apt.status === 'In Progress');
+    const historicalAppointments = appointments.filter(apt => apt.status === 'Completed' || apt.status === 'Cancelled');
+
+    const getAptStyles = (apt) => {
+        const isBypassed = apt.status === 'Waiting' && 
+            new Date().getTime() > new Date(apt.estimated_time).getTime() + 2 * 60 * 1000;
+        
+        if (isBypassed) {
+            return {
+                borderClass: 'border-l-4 border-red-500 dark:border-red-400',
+                statusClass: 'font-bold text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded inline-block',
+                statusLabel: `Delayed (${apt.status})`
+            };
+        }
+        if (apt.status === 'In Progress') {
+            return {
+                borderClass: 'border-l-4 border-blue-500 dark:border-blue-400',
+                statusClass: 'font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded inline-block',
+                statusLabel: apt.status
+            };
+        }
+        return {
+            borderClass: 'border-l-4 border-indigo-500 dark:border-indigo-400',
+            statusClass: 'font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded inline-block',
+            statusLabel: apt.status
+        };
+    };
+
     useEffect(() => {
         fetchDoctors();
         // Restore session if exists
         const storedPid = localStorage.getItem('patientId');
         if (storedPid) {
             fetchPatientDetails(storedPid);
+            fetchAppointments(storedPid);
+        } else {
+            navigate('/login/patient');
         }
-    }, []);
+    }, [navigate]);
 
     const fetchPatientDetails = async (id) => {
         try {
@@ -32,9 +69,27 @@ function PatientDashboard() {
             setPatient(res.data);
         } catch (err) {
             console.error('Error restoring session', err);
-            // Optional: Clear invalid session
-            // localStorage.removeItem('patientId');
+            localStorage.removeItem('patientId');
+            localStorage.removeItem('patientName');
+            localStorage.removeItem('role');
+            navigate('/login/patient');
         }
+    };
+
+    const fetchAppointments = async (patientId) => {
+        try {
+            const res = await axios.get(`${API_URL}/patient/${patientId}/appointments`);
+            setAppointments(res.data);
+        } catch (err) {
+            console.error('Error fetching patient appointments', err);
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('role');
+        localStorage.removeItem('patientId');
+        localStorage.removeItem('patientName');
+        navigate('/login/patient');
     };
 
     const fetchDoctors = async () => {
@@ -51,13 +106,14 @@ function PatientDashboard() {
         try {
             const res = await axios.post(`${API_URL}/registerPatient`, regForm);
             setPatient(res.data);
+            setToast({ type: 'success', message: 'Registered successfully!' });
         } catch (err) {
-            alert('Error registering: ' + (err.response?.data?.error || err.message));
+            setToast({ type: 'error', message: 'Error registering: ' + (err.response?.data?.error || err.message) });
         }
     };
 
     const handleBook = async () => {
-        if (!selectedDoctor) return alert('Select a doctor');
+        if (!selectedDoctor) return setToast({ type: 'warning', message: 'Please select a doctor' });
         try {
             const res = await axios.post(`${API_URL}/bookAppointment`, {
                 patient_id: patient.patient_id,
@@ -70,8 +126,9 @@ function PatientDashboard() {
                 doctor_name: doctors.find(d => d.doctor_id === selectedDoctor)?.name
             };
             setAppointments([newAppt, ...appointments]);
+            setToast({ type: 'success', message: 'Appointment booked successfully! Token #' + res.data.appointment.token_number });
         } catch (err) {
-            alert('Error booking: ' + (err.response?.data?.error || err.message));
+            setToast({ type: 'error', message: 'Error booking: ' + (err.response?.data?.error || err.message) });
         }
     };
 
@@ -149,7 +206,11 @@ function PatientDashboard() {
     }
 
     return (
-        <Layout>
+        <Layout actions={
+            <button onClick={handleLogout} className="text-red-500 hover:text-red-600 font-semibold text-sm flex items-center gap-1 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+                <LogOut size={16} /> Logout
+            </button>
+        }>
             <div className="max-w-4xl mx-auto space-y-6">
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 flex justify-between items-center">
                     <div>
@@ -168,7 +229,7 @@ function PatientDashboard() {
                     </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-6 items-start">
                     {/* Booking Section */}
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700">
                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-white">
@@ -209,41 +270,160 @@ function PatientDashboard() {
                             <Activity className="w-5 h-5 text-indigo-500" /> Your Appointments
                         </h3>
 
-                        {appointments.length === 0 && (
-                            <div className="bg-gray-50 dark:bg-slate-800/50 p-6 rounded-xl border border-dashed border-gray-200 dark:border-slate-700 text-center text-gray-400">
-                                No active appointments
+                        {/* Tabs Selector */}
+                        <div className="flex gap-4 border-b border-gray-100 dark:border-slate-700 pb-2">
+                            <button
+                                onClick={() => setActiveTab('active')}
+                                className={`pb-2 px-1 font-bold text-sm transition-all cursor-pointer ${
+                                    activeTab === 'active' 
+                                        ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' 
+                                        : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400'
+                                }`}
+                            >
+                                Active ({activeAppointments.length})
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={`pb-2 px-1 font-bold text-sm transition-all cursor-pointer ${
+                                    activeTab === 'history' 
+                                        ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' 
+                                        : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400'
+                                }`}
+                            >
+                                History ({historicalAppointments.length})
+                            </button>
+                        </div>
+
+                        {activeTab === 'active' ? (
+                            <>
+                                {activeAppointments.length === 0 && (
+                                    <div className="bg-gray-50 dark:bg-slate-800/50 p-6 rounded-xl border border-dashed border-gray-200 dark:border-slate-700 text-center text-gray-400">
+                                        No active appointments
+                                    </div>
+                                )}
+
+                                {/* Display up to 4 active appointments */}
+                                {activeAppointments.slice(0, 4).map((apt, idx) => {
+                                    const styles = getAptStyles(apt);
+                                    return (
+                                        <div key={idx} className={`bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md ${styles.borderClass} animate-fade-in`}>
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <h4 className="font-bold text-lg text-gray-800 dark:text-white">{apt.doctor_name || 'Doctor'}</h4>
+                                                    <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">Consultation</span>
+                                                </div>
+                                                <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400">#{apt.token_number}</div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t border-gray-100 dark:border-slate-700">
+                                                <div>
+                                                    <div className="text-gray-500 dark:text-gray-400 mb-1">Status</div>
+                                                    <span className={styles.statusClass}>
+                                                        {styles.statusLabel}
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-end gap-1"><Clock size={12} /> Est. Time</div>
+                                                    <div className="font-bold text-gray-800 dark:text-white">
+                                                        {new Date(apt.estimated_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Dropdown for remaining appointments if > 4 */}
+                                {activeAppointments.length > 4 && (
+                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 space-y-4">
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                            More Active Appointments ({activeAppointments.length - 4})
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={selectedOldApptId}
+                                                onChange={(e) => setSelectedOldApptId(e.target.value)}
+                                                className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer appearance-none pr-10"
+                                            >
+                                                <option value="">-- Choose an appointment to view --</option>
+                                                {activeAppointments.slice(4).map((apt) => (
+                                                    <option key={apt.appointment_id} value={apt.appointment_id}>
+                                                        Token #{apt.token_number} - Dr. {apt.doctor_name} ({apt.status})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                                        </div>
+
+                                        {selectedOldApptId && (() => {
+                                            const extraAppts = activeAppointments.slice(4);
+                                            const selectedApt = extraAppts.find(apt => apt.appointment_id === selectedOldApptId);
+                                            if (!selectedApt) return null;
+                                            const styles = getAptStyles(selectedApt);
+                                            return (
+                                                <div className={`bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md ${styles.borderClass} animate-slide-in mt-4`}>
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div>
+                                                            <h4 className="font-bold text-lg text-gray-800 dark:text-white">{selectedApt.doctor_name || 'Doctor'}</h4>
+                                                            <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">Consultation</span>
+                                                        </div>
+                                                        <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400">#{selectedApt.token_number}</div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t border-gray-100 dark:border-slate-700">
+                                                        <div>
+                                                            <div className="text-gray-500 dark:text-gray-400 mb-1">Status</div>
+                                                            <span className={styles.statusClass}>
+                                                                {styles.statusLabel}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-end gap-1"><Clock size={12} /> Est. Time</div>
+                                                            <div className="font-bold text-gray-800 dark:text-white">
+                                                                {new Date(selectedApt.estimated_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="space-y-3">
+                                {historicalAppointments.length === 0 ? (
+                                    <div className="bg-gray-50 dark:bg-slate-800/50 p-6 rounded-xl border border-dashed border-gray-200 dark:border-slate-700 text-center text-gray-400 animate-fade-in">
+                                        No past consultations in history
+                                    </div>
+                                ) : (
+                                    historicalAppointments.map((apt, idx) => (
+                                        <div key={idx} className="bg-gray-50 dark:bg-slate-900/40 p-4 rounded-xl border border-gray-200 dark:border-slate-700/60 flex justify-between items-center transition-all hover:bg-gray-100/50 dark:hover:bg-slate-700/30 animate-fade-in">
+                                            <div>
+                                                <h4 className="font-bold text-sm text-gray-850 dark:text-white">{apt.doctor_name}</h4>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                                    {new Date(apt.created_at || apt.estimated_time).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-mono font-semibold text-gray-400 dark:text-gray-500">Token #{apt.token_number}</span>
+                                                <span className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
+                                                    apt.status === 'Completed' 
+                                                        ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400' 
+                                                        : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400'
+                                                }`}>
+                                                    {apt.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         )}
-
-                        {appointments.map((apt, idx) => (
-                            <div key={idx} className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border-l-4 border-indigo-500 dark:border-indigo-400 animate-fade-in">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h4 className="font-bold text-lg text-gray-800 dark:text-white">{apt.doctor_name || 'Doctor'}</h4>
-                                        <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">Consultation</span>
-                                    </div>
-                                    <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400">#{apt.token_number}</div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t border-gray-100 dark:border-slate-700">
-                                    <div>
-                                        <div className="text-gray-500 dark:text-gray-400 mb-1">Status</div>
-                                        <span className="font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded inline-block">
-                                            {apt.status}
-                                        </span>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-end gap-1"><Clock size={12} /> Est. Time</div>
-                                        <div className="font-bold text-gray-800 dark:text-white">
-                                            {new Date(apt.estimated_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </div>
+            {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
         </Layout>
     );
 }

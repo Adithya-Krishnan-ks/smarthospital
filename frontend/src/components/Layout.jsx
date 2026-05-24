@@ -8,6 +8,28 @@ export default function Layout({ children, actions }) {
     const location = useLocation();
     const navigate = useNavigate();
 
+    const hideBackAndHome = [
+        '/admin',
+        '/admin-dashboard',
+        '/doctor',
+        '/doctor-dashboard',
+        '/patient',
+        '/patient-dashboard'
+    ].includes(location.pathname);
+
+    const handleBack = () => {
+        const path = location.pathname;
+        if (path.startsWith('/login/')) {
+            navigate('/');
+        } else if (path === '/register') {
+            navigate('/login/patient');
+        } else if (path === '/forgot-password') {
+            navigate('/');
+        } else {
+            navigate(-1);
+        }
+    };
+
     useEffect(() => {
         if (darkMode) {
             document.documentElement.classList.add('dark');
@@ -19,32 +41,33 @@ export default function Layout({ children, actions }) {
     }, [darkMode]);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 font-inter">
+         <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 transition-colors duration-300 font-inter">
             <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-slate-700">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <Link to="/" className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-lg shadow-lg flex items-center justify-center text-white font-bold text-lg">
-                                H
-                            </div>
-                            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-                                Smart Hospital
-                            </span>
+                           <div className="w-8 h-8 bg-blue-600 rounded-lg shadow-lg flex items-center justify-center text-white font-bold text-lg">
+    H
+</div>
+
+<span className="font-bold text-xl tracking-tight text-blue-600 dark:text-blue-400">
+    Smart Hospital
+</span>
                         </Link>
 
                         <div className="flex items-center gap-3">
-                            {location.pathname !== '/' && (
+                            {location.pathname !== '/' && !hideBackAndHome && (
                                 <>
                                     <button
-                                        onClick={() => navigate(-1)}
-                                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-all text-gray-500 dark:text-gray-400"
+                                        onClick={handleBack}
+                                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-all text-gray-500 dark:text-gray-400 cursor-pointer"
                                         title="Go Back"
                                     >
                                         <ArrowLeft size={20} />
                                     </button>
                                     <Link
                                         to="/"
-                                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-all text-gray-500 dark:text-gray-400"
+                                        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-all text-gray-500 dark:text-gray-400 cursor-pointer"
                                         title="Go Home"
                                     >
                                         <Home size={20} />
